@@ -5,9 +5,11 @@ Current compatibility:
 		May support XM in the future.
 
 	MOD:
-		Supports 4, 8, 16, 24 channel modules right now.
-		Has to be exactly 4, 8, 16 or 24 channels.
-		If something else, use openmpt to save it with the correct amount of channels.
+		Supports 4, 8, 16, 24, 32, 48 channel modules right now. Does not support
+		arbitrary channel counts yet.
+		
+		If the channel did not convert properly, use openmpt to save it with
+		the correct amount of channels.
 		
 		Playback may not be 100% accurate to protracker, or anything really.
 	
@@ -75,7 +77,7 @@ Chip notes:
 			Sample length slightly reduced for non-looping samples
 			Sample offset loops may not work
 			Pan range 0x10-0xF0, 0x00 mutes the sample, low nibble ignored.
-			Volumes may be a little off.
+			Volumes may be a little off, especially around higher values.
 		
 	YMZ280B
 		Considered for inclusion.
