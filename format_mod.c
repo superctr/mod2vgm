@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
+#include <ctype.h>
 
 #include "mod2vgm.h"
 
@@ -119,7 +120,7 @@ void mod_parse_column(uint8_t* d, PatternColumn *c)
         if(c->parameter == 8 && mod_panning == 2)
             c->parameter=9;
         break;
-    case 0x09: // sample offset (this is not supported)
+    case 0x09: // sample offset
         c->effect=SAMPLE_OFFSET;
         break;
     case 0x0a: // volume slide
@@ -216,23 +217,22 @@ uint8_t* mod_parse_file(uint8_t* d)
             mod.num_patterns = pos;
     }
 
-    uint8_t ch1 = *(d+0x438);
-    uint8_t ch2 = *(d+0x439);
     mod.num_channels = 4;
-    if(ch1 == '2' && ch2 == '4')
-        mod.num_channels = 24;
-    else if(ch1 == '1' && ch2 == '6')
-        mod.num_channels = 16;
-    else if(ch1 == '3' && ch2 == '2')
-        mod.num_channels = 32;
-    else if(ch1 == '4' && ch2 == '8')
-        mod.num_channels = 48;
-    else if(ch1 == '8')
-        mod.num_channels = 8;
-    else if(ch1 == '6')
-        mod.num_channels = 6;
-    mod.num_samples = 31;
+    uint8_t * chstr = d+0x438;
 
+    // xCHN
+    if( isdigit(chstr[0]) && chstr[1] == 'C' && chstr[2] == 'H' && chstr[3] == 'N' )
+        mod.num_channels = chstr[0] - '0';
+
+    // xxCH / xxCN
+    if( isdigit(chstr[0]) && isdigit(chstr[1]) && chstr[2] == 'C' )
+        mod.num_channels = 10*(chstr[0]-'0') + (chstr[1]-'0');
+
+    // OCTA / OKTA
+    if( chstr[0] == 'O' && chstr[2] == 'T' && chstr[3] == 'A' )
+        mod.num_channels = 8;
+
+    mod.num_samples = 31;
     verbose(0,"Module info:\n"
             "\tPositions = %d\n"
             "\tPatterns = %d\n"
