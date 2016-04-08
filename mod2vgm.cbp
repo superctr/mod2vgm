@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="mod2vgm" />
+		<Option pch_mode="2" />
+		<Option compiler="gnu_gcc_compiler_2" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/mod2vgm" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/mod2vgm" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gnu_gcc_compiler_2" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-DNOVERBOSE" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+		</Compiler>
+		<Unit filename="chip_opl4.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="chip_opl4.h" />
+		<Unit filename="fileio.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="fileio.h" />
+		<Unit filename="format_mod.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="format_mod.h" />
+		<Unit filename="helper.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="main.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="mod2vgm.h" />
+		<Unit filename="player.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="vgm.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="vgm.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
