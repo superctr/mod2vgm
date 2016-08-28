@@ -62,10 +62,10 @@ typedef enum {
 
 typedef struct
 {
-    uint16_t used_length;
-    uint16_t length;
-    uint16_t loop_start;
-    uint16_t loop_length;
+    uint32_t used_length;
+    uint32_t length;
+    uint32_t loop_start;
+    uint32_t loop_length;
     uint8_t flags;
     uint8_t finetune;
     int8_t volume;
