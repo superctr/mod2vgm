@@ -360,10 +360,10 @@ void opl2_update_insvol(int c,uint8_t* ins,int vol)
     if(vol<0)
         vol=0;
 
-    int c_vol = ins[3] + vol;
+    int c_vol = (ins[3] + vol)&0x3f;
     if((ins[10] & 1) == 0)
         vol=0;
-    int m_vol = ins[2] + vol;
+    int m_vol = (ins[2] + vol)&0x3f;
 
     if(c_vol > 63) c_vol=63;
     if(m_vol > 63) m_vol=63;
