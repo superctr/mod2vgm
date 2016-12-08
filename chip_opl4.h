@@ -23,4 +23,8 @@ void opl4_update_sample(int c, uint8_t sample_id);
 void opl4_update_volume(int c);
 void opl4_update_freq(int c, int16_t period);
 
+void opl2_update_freq(int c,int keyon,int16_t period);
+void opl2_update_ins(int c,uint8_t* ins);
+void opl2_update_insvol(int c,uint8_t* ins,int vol);
+
 #endif // CHIP_OPL4_H_INCLUDED

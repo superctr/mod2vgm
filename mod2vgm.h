@@ -58,6 +58,8 @@ typedef enum {
     TEMPO,                      // Fxx
     SPEED,                      // Fxx
 
+    FM_CHANNEL,                 // EFx
+
 } EffectTypes;
 
 typedef struct
@@ -70,6 +72,8 @@ typedef struct
     uint8_t finetune;
     int8_t volume;
     uint32_t db_position;
+
+    uint8_t fm_data[16];
 } Sample;
 
 typedef struct
@@ -234,6 +238,8 @@ typedef struct
 
     uint8_t keyon;  // will be 0 on start...
     // no idea whether we'll use vibrato or not.
+
+    uint8_t fm_channel; // >0 to enable FM
 
 } ChannelState;
 

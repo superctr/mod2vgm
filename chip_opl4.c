@@ -16,6 +16,26 @@ void opl4_write(uint8_t port, uint8_t reg, uint8_t channel, uint8_t value)
     vgm_write(0xd0,port|dualchip,reg+channel,value);
 }
 
+
+
+// max 14 channels for now!
+void opl2_ch_write(uint8_t reg, uint8_t channel, uint8_t value)
+{
+    int dualchip = (channel/9);
+    channel %= 9;
+
+    vgm_write(0xd0,dualchip,reg+channel,value);
+}
+
+void opl2_op_write(uint8_t reg, uint8_t channel, uint8_t value)
+{
+    int dualchip = (channel/9);
+    channel %= 9;
+    int group = (channel/3)*8;
+    channel %= 3;
+    vgm_write(0xd0,dualchip,reg+group+channel,value);
+}
+
 uint16_t period_to_tone(uint16_t period)
 {
     //double freq = 3579545.25/period;
@@ -61,10 +81,17 @@ int opl4_init(int numchannels, uint8_t * samplerom, int samplerom_size, uint32_t
     int i, j;
     for(j=0;j<=dualchip;j++)
     {
-        vgm_write(0xd0,FM1|j<<7, 0x05, 0x03);
-        vgm_write(0xd0,PCM|j<<7, 0x00, 0x00);
-        vgm_write(0xd0,PCM|j<<7, 0x01, 0x00);
-        vgm_write(0xd0,PCM|j<<7, 0x02, 0x10);
+        vgm_write(0xd0,FM1|j<<7, 0x05, 0x03); // Expansion
+        vgm_write(0xd0,FM0|j<<7, 0x00, 0x00); // FM test
+        vgm_write(0xd0,FM0|j<<7, 0x01, 0x20); // FM test
+        vgm_write(0xd0,FM1|j<<7, 0x04, 0x00); // 4op mode = disabled
+        vgm_write(0xd0,FM0|j<<7, 0x08, 0x00); // Kbd split
+        vgm_write(0xd0,FM0|j<<7, 0xbd, 0x00); // Flags
+        vgm_write(0xd0,PCM|j<<7, 0x00, 0x00); // Pcm test
+        vgm_write(0xd0,PCM|j<<7, 0x01, 0x00); // Pcm test
+        vgm_write(0xd0,PCM|j<<7, 0x02, 0x10); // Memory configuration
+        vgm_write(0xd0,PCM|j<<7, 0xf8, 0x1b); // FM mix
+        vgm_write(0xd0,PCM|j<<7, 0xf9, 0x00); // PCM mix
 
         for(i=0;i<24;i++)
         {
@@ -241,6 +268,9 @@ const uint8_t AttenuationTable[65] =
 
 void opl4_update_keyon(int c)
 {
+    if(song.channels[c].fm_channel)
+        return opl2_update_freq(song.channels[c].fm_channel-1,song.channels[c].keyon,song.channels[c].period+song.channels[c].vibrato_offset);
+
     uint8_t val;
 
     // Setting pan to 8 mutes a channel.
@@ -255,6 +285,9 @@ void opl4_update_keyon(int c)
 }
 void opl4_update_sample(int c, uint8_t sample_id)
 {
+    if(song.channels[c].fm_channel)
+        return opl2_update_ins(song.channels[c].fm_channel-1,mod.samples[song.channels[c].sample].fm_data);
+
     opl4_write(PCM,0x08,c,(use_ram)<<7 | sample_id);
     verbose(1,"\tOPL4 Ch %d Sample = %02x\n",c,(use_ram)<<7 | sample_id);
     //vgm_delay(140);
@@ -264,6 +297,9 @@ void opl4_update_sample(int c, uint8_t sample_id)
 
 void opl4_update_volume(int c)
 {
+    if(song.channels[c].fm_channel)
+        return opl2_update_insvol(song.channels[c].fm_channel-1,mod.samples[song.channels[c].sample].fm_data,63-song.channels[c].volume);
+
     if(song.channels[c].volume < 0)
         song.channels[c].volume = 0;
     if(song.channels[c].volume > 64)
@@ -278,9 +314,62 @@ void opl4_update_volume(int c)
 }
 void opl4_update_freq(int c, int16_t period)
 {
+    if(song.channels[c].fm_channel)
+        return opl2_update_freq(song.channels[c].fm_channel-1,song.channels[c].keyon,period);
+
     uint16_t val = period_to_tone(period);
     // Does it matter in which order I write these? Application manual says it doesn't matter...
     opl4_write(PCM,0x20,c,(val&0x00ff) >> 0);
     opl4_write(PCM,0x38,c,(val&0xff00) >> 8);
     verbose(1,"\tOPL4 Ch %d Freq = %04x (%d)\n",c,val,period);
 }
+
+void opl2_update_freq(int c,int keyon,int16_t period)
+{
+    uint16_t freq = round(PAULA_CLK/period/32);
+	int fnum=1024;
+	int block=-1;
+	while(fnum>1023)
+	{
+		block++;
+		fnum = freq*pow(2,20-block)/49516;
+	}
+	fnum&=1023;
+
+    opl2_ch_write(0xa0,c,(fnum&0x00ff) >> 0);
+    opl2_ch_write(0xb0,c,(keyon<<5) | ((block&0x07)<<2) | (fnum>>8));
+
+    verbose(1,"\tOPL2 Ch %d Fnum = %d (Freq=%d), Block = %d, KeyOn = %d\n",c,fnum,freq,block,keyon);
+}
+void opl2_update_ins(int c,uint8_t* ins)
+{
+    opl2_op_write(0x20,c,ins[0]);
+    opl2_op_write(0x23,c,ins[1]);
+    opl2_op_write(0x60,c,ins[4]);
+    opl2_op_write(0x63,c,ins[5]);
+    opl2_op_write(0x80,c,ins[6]);
+    opl2_op_write(0x83,c,ins[7]);
+    opl2_op_write(0xe0,c,ins[8]);
+    opl2_op_write(0xe3,c,ins[9]);
+    opl2_ch_write(0xc0,c,ins[10]|0x30);
+
+    verbose(1,"\tOPL2 instrument set\n");
+}
+void opl2_update_insvol(int c,uint8_t* ins,int vol)
+{
+    if(vol<0)
+        vol=0;
+
+    int c_vol = (ins[3] + vol)&0x3f;
+    if((ins[10] & 1) == 0)
+        vol=0;
+    int m_vol = (ins[2] + vol)&0x3f;
+
+    opl2_op_write(0x40,c,(ins[2]&0xc0)+m_vol);
+    opl2_op_write(0x43,c,(ins[3]&0xc0)+c_vol);
+
+    verbose(1,"\tOPL2 volume set to C=%d M=%d\n",m_vol,c_vol);
+}
+
+
+

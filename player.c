@@ -301,8 +301,13 @@ void process_channel(int c)
     case CUT: // Cut now (if param==0)
         if(ch->parameter == 0)
         {
-            ch->volume=0;
-            ch->status|=UPDATE_VOLUME;
+            if(ch->fm_channel)
+                ch->status|=SET_KEYOFF;
+            else
+            {
+                ch->volume=0;
+                ch->status|=UPDATE_VOLUME;
+            }
         }
         break;
     case VOL: // Set volume
@@ -324,6 +329,14 @@ void process_channel(int c)
     case PAN:
         ch->pan=ch->parameter;
         ch->status|=UPDATE_STATUS;
+        break;
+    case FM_CHANNEL:
+        if(ch->parameter==0 || ch->parameter == 15)
+            ch->status|=SET_KEYOFF;
+        if(ch->parameter<15)
+            ch->fm_channel=ch->parameter;
+        if(ch->parameter==0)
+            ch->fm_channel|=16;
         break;
     case SUBSAMPLE:
         if(ch->subsample != ch->parameter)
@@ -442,8 +455,13 @@ void process_channel_tick(int c)
         ch->tick_counter++;
         if(ch->tick_counter == ch->parameter)
         {
-            ch->volume=0;
-            ch->status|=UPDATE_VOLUME;
+            if(ch->fm_channel)
+                ch->status|=SET_KEYOFF;
+            else
+            {
+                ch->volume=0;
+                ch->status|=UPDATE_VOLUME;
+            }
         }
         break;
     case TREMOLO:
@@ -476,7 +494,14 @@ void execute_tick()
         if(ch->status & SET_KEYOFF)
         {
             ch->keyon=0;
-            opl4_update_keyon(c);
+            if(ch->fm_channel & 16)
+            {
+                ch->fm_channel&=0x15;
+                opl4_update_keyon(c);
+                ch->fm_channel=0;
+            }
+            else
+                opl4_update_keyon(c);
             ch->offset=0;
         }
 

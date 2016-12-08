@@ -8,6 +8,67 @@
 #include "mod2vgm.h"
 
 
+// https://en.wikibooks.org/wiki/Algorithm_Implementation/Miscellaneous/Base64#C
+#define WHITESPACE 64
+#define EQUALS     65
+#define INVALID    66
+static const uint8_t d[] = {
+    65,66,66,66,66,66,66,66,66,66,64,66,66,66,66,66,66,66,66,66,66,66,66,66,66,
+    66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,62,66,66,66,63,52,53,
+    54,55,56,57,58,59,60,61,66,66,66,65,66,66,66, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+    10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,66,66,66,66,66,66,26,27,28,
+    29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,66,66,
+    66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,
+    66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,
+    66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,
+    66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,
+    66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,
+    66,66,66,66,66,66
+};
+int base64decode (uint8_t *in, size_t inLen, uint8_t *out, size_t *outLen) {
+    uint8_t *end = in + inLen;
+    uint8_t iter = 0;
+    uint32_t buf = 0;
+    size_t len = 0;
+
+    while (in < end) {
+       uint8_t c = d[*in++];
+
+        switch (c) {
+        case WHITESPACE: continue;   /* skip whitespace */
+        case INVALID:    return 1;   /* invalid input, return error */
+        case EQUALS:                 /* pad character, end of data */
+            in = end;
+            continue;
+        default:
+            buf = buf << 6 | c;
+            iter++; // increment the number of iteration
+            /* If the buffer is full, split it into bytes */
+            if (iter == 4) {
+                if ((len += 3) > *outLen) return 1; /* buffer overflow */
+                *(out++) = (buf >> 16) & 255;
+                *(out++) = (buf >> 8) & 255;
+                *(out++) = buf & 255;
+                buf = 0; iter = 0;
+
+            }
+        }
+    }
+
+    if (iter == 3) {
+        if ((len += 2) > *outLen) return 1; /* buffer overflow */
+        *(out++) = (buf >> 10) & 255;
+        *(out++) = (buf >> 2) & 255;
+    }
+    else if (iter == 2) {
+        if (++len > *outLen) return 1; /* buffer overflow */
+        *(out++) = (buf >> 4) & 255;
+    }
+
+    *outLen = len; /* modify to reflect the actual output size */
+    return 0;
+}
+
 void mod_parse_sample(uint8_t* d, Sample *s)
 {
     s->flags=0;
@@ -24,6 +85,18 @@ void mod_parse_sample(uint8_t* d, Sample *s)
 
     s->finetune = *(d+0x18) & 0x0f;
     s->volume = *(d+0x19);
+
+    memset(s->fm_data,0,sizeof(s->fm_data));
+    if(!memcmp("FM: ",d,4))
+    {
+        size_t ol=16;
+        base64decode(d+4,18,s->fm_data,&ol);
+        printf("Fm data: \n");
+        int i;
+        for(i=0;i<16;i++)
+            printf("%02x ",s->fm_data[i]);
+        printf("\n");
+    }
 
     verbose(0,"Sample info: l=%d, ls=%d ll=%d, f=%d, v=%d\n",s->length,s->loop_start,s->loop_length,s->finetune,s->volume);
 }
@@ -152,7 +225,7 @@ void mod_parse_column(uint8_t* d, PatternColumn *c)
         case 0x30: // glissando, not supported
         case 0x40: // vibrato waveform, not supported
         case 0x70: // tremolo waveform, not supported
-        case 0xf0: // invert loop (not supported)
+        //case 0xf0: // invert loop (not supported)
         default:
             break;
         case 0x50:
@@ -185,6 +258,9 @@ void mod_parse_column(uint8_t* d, PatternColumn *c)
             break;
         case 0xe0:
             c->effect=PATTERN_DELAY;
+            break;
+        case 0xf0:
+            c->effect=FM_CHANNEL;
             break;
         }
 
