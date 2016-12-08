@@ -360,11 +360,13 @@ void opl2_update_insvol(int c,uint8_t* ins,int vol)
     if(vol<0)
         vol=0;
 
-    int c_vol = (ins[3] + vol)&0x3f;
+    int c_vol = ins[3] + vol;
     if((ins[10] & 1) == 0)
         vol=0;
-    int m_vol = (ins[2] + vol)&0x3f;
+    int m_vol = ins[2] + vol;
 
+    if(c_vol > 63) c_vol=63;
+    if(m_vol > 63) m_vol=63;
     opl2_op_write(0x40,c,(ins[2]&0xc0)+m_vol);
     opl2_op_write(0x43,c,(ins[3]&0xc0)+c_vol);
 
