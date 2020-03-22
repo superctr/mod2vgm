@@ -1,9 +1,9 @@
 #ifndef CHIP_OPL4_H_INCLUDED
 #define CHIP_OPL4_H_INCLUDED
 
-#define FM0 0x00
-#define FM1 0x01
-#define PCM 0x02
+#define OPL4_FM0 0x00
+#define OPL4_FM1 0x01
+#define OPL4_PCM 0x02
 
 #include "mod2vgm.h"
 
@@ -23,7 +23,7 @@ void opl4_update_sample(int c, uint8_t sample_id);
 void opl4_update_volume(int c);
 void opl4_update_freq(int c, int16_t period);
 
-void opl2_update_freq(int c,int keyon,int16_t period);
+void opl2_update_freq(int c,int keyon,int16_t period,uint8_t* ins,uint8_t pan);
 void opl2_update_ins(int c,uint8_t* ins);
 void opl2_update_insvol(int c,uint8_t* ins,int vol);
 

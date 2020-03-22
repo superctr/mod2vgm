@@ -283,6 +283,7 @@ const char* NoteNames[12];
     int32_t use_ram;
     uint32_t rom_offset;
     int32_t verbose_level;
+    int32_t allow_dualchip;
 
 
 

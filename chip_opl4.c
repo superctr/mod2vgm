@@ -72,6 +72,9 @@ int opl4_init(int numchannels, uint8_t * samplerom, int samplerom_size, uint32_t
 
     int dualchip = (numchannels-1)/24;
 
+    if(!allow_dualchip)
+        dualchip=0;
+
     vgm_poke32(0x60, 33868800 | (dualchip << 30));
 
     vgm_datablock(0x84, samplerom_size, samplerom, 0x400000, startoffset, 0);
@@ -81,24 +84,25 @@ int opl4_init(int numchannels, uint8_t * samplerom, int samplerom_size, uint32_t
     int i, j;
     for(j=0;j<=dualchip;j++)
     {
-        vgm_write(0xd0,FM1|j<<7, 0x05, 0x03); // Expansion
-        vgm_write(0xd0,FM0|j<<7, 0x00, 0x00); // FM test
-        vgm_write(0xd0,FM0|j<<7, 0x01, 0x20); // FM test
-        vgm_write(0xd0,FM1|j<<7, 0x04, 0x00); // 4op mode = disabled
-        vgm_write(0xd0,FM0|j<<7, 0x08, 0x00); // Kbd split
-        vgm_write(0xd0,FM0|j<<7, 0xbd, 0x00); // Flags
-        vgm_write(0xd0,PCM|j<<7, 0x00, 0x00); // Pcm test
-        vgm_write(0xd0,PCM|j<<7, 0x01, 0x00); // Pcm test
-        vgm_write(0xd0,PCM|j<<7, 0x02, 0x10); // Memory configuration
-        vgm_write(0xd0,PCM|j<<7, 0xf8, 0x1b); // FM mix
-        vgm_write(0xd0,PCM|j<<7, 0xf9, 0x00); // PCM mix
+        vgm_write(0xd0,OPL4_FM1|j<<7, 0x05, 0x03); // Expansion
+        vgm_write(0xd0,OPL4_FM0|j<<7, 0x00, 0x00); // FM test
+        vgm_write(0xd0,OPL4_FM0|j<<7, 0x01, 0x20); // FM test
+        vgm_write(0xd0,OPL4_FM1|j<<7, 0x04, 0x00); // 4op mode = disabled
+        vgm_write(0xd0,OPL4_FM0|j<<7, 0x08, 0x00); // Kbd split
+        vgm_write(0xd0,OPL4_FM0|j<<7, 0xbd, 0x00); // Flags
+        vgm_write(0xd0,OPL4_PCM|j<<7, 0x00, 0x00); // Pcm test
+        vgm_write(0xd0,OPL4_PCM|j<<7, 0x01, 0x00); // Pcm test
+        vgm_write(0xd0,OPL4_PCM|j<<7, 0x02, 0x10); // Memory configuration
+        //vgm_write(0xd0,PCM|j<<7, 0xf8, 0x1b); // FM mix
+        vgm_write(0xd0,OPL4_PCM|j<<7, 0xf8, 0x00); // FM mix
+        vgm_write(0xd0,OPL4_PCM|j<<7, 0xf9, 0x00); // PCM mix
 
         for(i=0;i<24;i++)
         {
-            vgm_write(0xd0,PCM|j<<7, 0x20+i, use_ram); // should be 0x00 or 0x01
-            vgm_write(0xd0,PCM|j<<7, 0x38+i, 0x00);
-            vgm_write(0xd0,PCM|j<<7, 0x50+i, 0x00);
-            vgm_write(0xd0,PCM|j<<7, 0x68+i, 0x00);
+            vgm_write(0xd0,OPL4_PCM|j<<7, 0x20+i, use_ram); // should be 0x00 or 0x01
+            vgm_write(0xd0,OPL4_PCM|j<<7, 0x38+i, 0x00);
+            vgm_write(0xd0,OPL4_PCM|j<<7, 0x50+i, 0x00);
+            vgm_write(0xd0,OPL4_PCM|j<<7, 0x68+i, 0x00);
         }
     }
     return 0;
@@ -269,7 +273,11 @@ const uint8_t AttenuationTable[65] =
 void opl4_update_keyon(int c)
 {
     if(song.channels[c].fm_channel)
-        return opl2_update_freq(song.channels[c].fm_channel-1,song.channels[c].keyon,song.channels[c].period+song.channels[c].vibrato_offset);
+        return opl2_update_freq(song.channels[c].fm_channel-1,
+                                song.channels[c].keyon,
+                                song.channels[c].period+song.channels[c].vibrato_offset,
+                                mod.samples[song.channels[c].sample].fm_data,
+                                song.channels[c].pan);
 
     uint8_t val;
 
@@ -279,7 +287,7 @@ void opl4_update_keyon(int c)
     else
         val = (song.channels[c].keyon<<7) | (song.channels[c].pan&0x0f);
 
-    opl4_write(PCM,0x68,c,val);
+    opl4_write(OPL4_PCM,0x68,c,val);
     verbose(1,"\tOPL4 Ch %d Keyon = %02x\n",c,val);
     //vgm_delay(10);
 }
@@ -288,7 +296,7 @@ void opl4_update_sample(int c, uint8_t sample_id)
     if(song.channels[c].fm_channel)
         return opl2_update_ins(song.channels[c].fm_channel-1,mod.samples[song.channels[c].sample].fm_data);
 
-    opl4_write(PCM,0x08,c,(use_ram)<<7 | sample_id);
+    opl4_write(OPL4_PCM,0x08,c,(use_ram)<<7 | sample_id);
     verbose(1,"\tOPL4 Ch %d Sample = %02x\n",c,(use_ram)<<7 | sample_id);
     //vgm_delay(140);
 }
@@ -306,25 +314,35 @@ void opl4_update_volume(int c)
         song.channels[c].volume = 64;
     uint8_t d = AttenuationTable[song.channels[c].volume];
 
-    opl4_write(PCM,0x50,c,d&0xfe);
+/*
+    int ramp_flag = (song.channels[c].status & SET_KEYON) ? 1 : 0;
+    if(ramp_flag)
+        verbose(1,"\tOPL4 Ch %d Ramp disabled\n",c);
+*/
+    int ramp_flag = 1; // ramp is slow so we don't do it at all
 
-    if(song.channels[c].volume <= 0x20)
+    opl4_write(OPL4_PCM,0x50,c,(d&0xfe)|ramp_flag);
+
+    //if(song.channels[c].volume <= 0x20)
 
     verbose(1,"\tOPL4 Ch %d Volume = %02x (%02x)\n",c,d, song.channels[c].volume);
 }
 void opl4_update_freq(int c, int16_t period)
 {
     if(song.channels[c].fm_channel)
-        return opl2_update_freq(song.channels[c].fm_channel-1,song.channels[c].keyon,period);
+        return opl2_update_freq(song.channels[c].fm_channel-1,
+                                song.channels[c].keyon,period,
+                                mod.samples[song.channels[c].sample].fm_data,
+                                song.channels[c].pan);
 
     uint16_t val = period_to_tone(period);
     // Does it matter in which order I write these? Application manual says it doesn't matter...
-    opl4_write(PCM,0x20,c,(val&0x00ff) >> 0);
-    opl4_write(PCM,0x38,c,(val&0xff00) >> 8);
+    opl4_write(OPL4_PCM,0x20,c,(val&0x00ff) >> 0);
+    opl4_write(OPL4_PCM,0x38,c,(val&0xff00) >> 8);
     verbose(1,"\tOPL4 Ch %d Freq = %04x (%d)\n",c,val,period);
 }
 
-void opl2_update_freq(int c,int keyon,int16_t period)
+void opl2_update_freq(int c,int keyon,int16_t period,uint8_t* ins,uint8_t pan)
 {
     uint16_t freq = round(PAULA_CLK/period/32);
 	int fnum=1024;
@@ -339,7 +357,15 @@ void opl2_update_freq(int c,int keyon,int16_t period)
     opl2_ch_write(0xa0,c,(fnum&0x00ff) >> 0);
     opl2_ch_write(0xb0,c,(keyon<<5) | ((block&0x07)<<2) | (fnum>>8));
 
-    verbose(1,"\tOPL2 Ch %d Fnum = %d (Freq=%d), Block = %d, KeyOn = %d\n",c,fnum,freq,block,keyon);
+    int outflag = 0;
+    pan &= 0x0f;
+    if((pan!=7) && (pan!=8))
+        outflag |= 0x10; // left
+    if((pan!=8) && (pan!=9))
+        outflag |= 0x20; // right
+    opl2_ch_write(0xc0,c,(ins[10]&0x3f)|outflag);
+
+    verbose(1,"\tOPL2 Ch %d Fnum = %d (Freq=%d), Block = %d, KeyOn = %d, Outflag=%02x (P=%d)\n",c,fnum,freq,block,keyon,outflag,pan);
 }
 void opl2_update_ins(int c,uint8_t* ins)
 {
@@ -351,7 +377,7 @@ void opl2_update_ins(int c,uint8_t* ins)
     opl2_op_write(0x83,c,ins[7]);
     opl2_op_write(0xe0,c,ins[8]);
     opl2_op_write(0xe3,c,ins[9]);
-    opl2_ch_write(0xc0,c,ins[10]|0x30);
+    //opl2_ch_write(0xc0,c,ins[10]|0x30); // written later
 
     verbose(1,"\tOPL2 instrument set\n");
 }

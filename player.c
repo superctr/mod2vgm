@@ -327,16 +327,17 @@ void process_channel(int c)
         ch->status|=UPDATE_PERIOD;
         break;
     case PAN:
+        verbose(1,"\tpan = %02x\n", ch->parameter);
         ch->pan=ch->parameter;
         ch->status|=UPDATE_STATUS;
         break;
     case FM_CHANNEL:
-        if(ch->parameter==0 || ch->parameter == 15)
+        if(ch->parameter==0)
             ch->status|=SET_KEYOFF;
-        if(ch->parameter<15)
+        if(ch->parameter>0)
             ch->fm_channel=ch->parameter;
         if(ch->parameter==0)
-            ch->fm_channel|=16;
+            ch->fm_channel|=32;
         break;
     case SUBSAMPLE:
         if(ch->subsample != ch->parameter)
@@ -494,9 +495,9 @@ void execute_tick()
         if(ch->status & SET_KEYOFF)
         {
             ch->keyon=0;
-            if(ch->fm_channel & 16)
+            if(ch->fm_channel & 32)
             {
-                ch->fm_channel&=0x15;
+                ch->fm_channel&=0x31;
                 opl4_update_keyon(c);
                 ch->fm_channel=0;
             }

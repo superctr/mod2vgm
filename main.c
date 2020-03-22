@@ -22,6 +22,7 @@ int main(int argc, char* argv [])
     mod_panning=0;
     use_ram=1;
     rom_offset=0x200000;
+    allow_dualchip=1;
     int i;
 
     for(i=1;i<argc;i++)
@@ -50,6 +51,10 @@ int main(int argc, char* argv [])
         {
             use_ram=0;
             rom_offset=0;
+        }
+        else if(!strcmp(argv[i],"-sc"))
+        {
+            allow_dualchip=0;
         }
         else if(!has_input_name)
         {

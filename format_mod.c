@@ -224,7 +224,7 @@ void mod_parse_column(uint8_t* d, PatternColumn *c)
             c->effect=FINE_PORTA;
         case 0x30: // glissando, not supported
         case 0x40: // vibrato waveform, not supported
-        case 0x70: // tremolo waveform, not supported
+        //case 0x70: // tremolo waveform, not supported
         //case 0xf0: // invert loop (not supported)
         default:
             break;
@@ -260,6 +260,7 @@ void mod_parse_column(uint8_t* d, PatternColumn *c)
             c->effect=PATTERN_DELAY;
             break;
         case 0xf0:
+        case 0x70:
             c->effect=FM_CHANNEL;
             break;
         }
