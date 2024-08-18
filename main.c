@@ -8,6 +8,18 @@
 #include "chip_opl4.h"
 #include "format_mod.h"
 
+// sorry for the globals
+Module mod;
+SongState song;
+ChipParams * chip;
+
+    // Command options
+int32_t mod_panning;
+int32_t use_ram;
+uint32_t rom_offset;
+int32_t verbose_level;
+int32_t allow_dualchip;
+
 int main(int argc, char* argv [])
 {
     char trunc_name[FILENAME_MAX], filename[FILENAME_MAX];

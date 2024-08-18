@@ -268,22 +268,22 @@ typedef struct
 } SongState;
 
 
-const uint16_t ProTrackerPeriodTable[6*12];
-const uint16_t ProTrackerTunedPeriods[16*12];
-const int16_t ModSinusTable[64];
-const char* NoteNames[12];
+extern const uint16_t ProTrackerPeriodTable[6*12];
+extern const uint16_t ProTrackerTunedPeriods[16*12];
+extern const int16_t ModSinusTable[64];
+extern const char* NoteNames[12];
 
 // sorry for the globals
-    Module mod;
-    SongState song;
-    ChipParams * chip;
+extern    Module mod;
+extern    SongState song;
+extern    ChipParams * chip;
 
     // Command options
-    int32_t mod_panning;
-    int32_t use_ram;
-    uint32_t rom_offset;
-    int32_t verbose_level;
-    int32_t allow_dualchip;
+extern    int32_t mod_panning;
+extern    int32_t use_ram;
+extern    uint32_t rom_offset;
+extern    int32_t verbose_level;
+extern    int32_t allow_dualchip;
 
 
 

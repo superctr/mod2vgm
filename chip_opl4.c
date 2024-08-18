@@ -8,6 +8,8 @@
 #include "vgm.h"
 #include "chip_opl4.h"
 
+ChipParams opl4;
+
 void opl4_write(uint8_t port, uint8_t reg, uint8_t channel, uint8_t value)
 {
     int dualchip = (channel/24)<<7;

@@ -5,9 +5,9 @@
 #define OPL4_FM1 0x01
 #define OPL4_PCM 0x02
 
-#include "mod2vgm.h"
+//#include "mod2vgm.h"
 
-ChipParams opl4;
+extern ChipParams opl4;
 
 //uint16_t opl4_period_to_tone(uint16_t period);
 
